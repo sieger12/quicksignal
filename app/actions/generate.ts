@@ -4,12 +4,16 @@ import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { headers } from "next/headers";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+}
 
 // ── Rate limiter (per Vercel instance) ───────────────────────────────────────
 const rl = new Map<string, { count: number; resetAt: number }>();
@@ -42,6 +46,7 @@ function toSlug(topic: string): string {
 }
 
 async function uniqueSlug(base: string): Promise<string> {
+  const admin = getAdmin();
   let slug = base;
   let attempt = 2;
   while (true) {
@@ -62,8 +67,9 @@ function norm(v: unknown): string {
   return String(v).trim();
 }
 
-// ── Main action ───────────────────────────────────────────────────────────────
 export async function generateBrief(topic: string): Promise<{ slug: string }> {
+  const admin = getAdmin();
+  const openai = getOpenAI();
   const ip = await getClientIp();
 
   if (!allow(`generate:${ip}`, 5, 60 * 60 * 1000)) {
@@ -75,7 +81,6 @@ export async function generateBrief(topic: string): Promise<{ slug: string }> {
 
   const slug = await uniqueSlug(toSlug(cleanTopic));
 
-  // 1. Insert placeholder
   const { data: created, error: createErr } = await admin
     .from("briefs")
     .insert({ topic: cleanTopic, slug, status: "processing" })
@@ -84,7 +89,6 @@ export async function generateBrief(topic: string): Promise<{ slug: string }> {
 
   if (createErr || !created) throw new Error("Failed to create brief.");
 
-  // 2. Generate with OpenAI
   try {
     const completion = await openai.chat.completions.create(
       {
@@ -125,7 +129,6 @@ Return valid JSON only (no markdown fences):
 
     const raw = completion.choices[0]?.message?.content ?? "{}";
     const p = JSON.parse(strip(raw));
-
     const tone = ["bullish", "neutral", "bearish"].includes(p.tone) ? p.tone : "neutral";
 
     await admin
@@ -150,26 +153,4 @@ Return valid JSON only (no markdown fences):
   }
 
   return { slug };
-}
-
-export async function getBriefBySlug(slug: string) {
-  const { data, error } = await admin
-    .from("briefs")
-    .select("*")
-    .eq("slug", slug)
-    .single();
-
-  if (error || !data) return null;
-  return data;
-}
-
-export async function getLatestBriefs(limit = 9) {
-  const { data } = await admin
-    .from("briefs")
-    .select("*")
-    .eq("status", "done")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  return data ?? [];
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestBriefs } from "@/app/actions/generate";
+import { getLatestBriefs } from "@/lib/db";
 
 const TONE_CONFIG = {
   bullish: { label: "Bullish", color: "var(--bullish)", bg: "rgba(34,197,94,0.1)" },

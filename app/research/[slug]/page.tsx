@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { getBriefBySlug } from "@/app/actions/generate";
+import { getBriefBySlug } from "@/lib/db";
 
 const TONE_CONFIG = {
   bullish: { label: "Bullish", color: "var(--bullish)", bg: "rgba(34,197,94,0.1)" },

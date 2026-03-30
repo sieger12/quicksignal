@@ -1,4 +1,6 @@
-import { getLatestBriefs } from "@/app/actions/generate";
+export const dynamic = "force-dynamic";
+
+import { getLatestBriefs } from "@/lib/db";
 import ResearchClient from "@/app/components/ResearchClient";
 
 export default async function ResearchPage() {
