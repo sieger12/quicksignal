@@ -36,3 +36,27 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Hero 2-column grid */
+.hero-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .hero-sample {
+    display: none !important;
+  }
+}
+
+/* Loading step pulse */
+@keyframes loadingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.loading-pulse {
+  animation: loadingPulse 1.4s ease-in-out infinite;
+}

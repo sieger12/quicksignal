@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Hero from "./components/Hero";
 import MarketOverview from "./components/MarketOverview";
@@ -9,10 +9,34 @@ import SectorStrip from "./components/SectorStrip";
 import UpcomingEvents from "./components/UpcomingEvents";
 import { generateBrief } from "./actions/generate";
 
+const LOADING_STEPS = [
+  "Scanning funding rates...",
+  "Analyzing whale flows...",
+  "Reading on-chain data...",
+  "Processing macro signals...",
+  "Writing your brief...",
+];
+
 export default function HomePage() {
   const router = useRouter();
   const [topic, setTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (isGenerating) {
+      setLoadingStep(0);
+      intervalRef.current = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % LOADING_STEPS.length);
+      }, 1600);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isGenerating]);
 
   const handleGenerate = async (text: string) => {
     const t = (text || topic).trim();
@@ -34,6 +58,7 @@ export default function HomePage() {
         topic={topic}
         setTopic={setTopic}
         isGenerating={isGenerating}
+        loadingStep={LOADING_STEPS[loadingStep]}
         onGenerate={handleGenerate}
       />
       <MarketOverview />
